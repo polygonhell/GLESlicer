@@ -1,0 +1,484 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"layer_",
+				"layer_height"
+			],
+			[
+				"rodHol",
+				"rodHolderLength"
+			],
+			[
+				"rodHolder",
+				"rodHolderRadius"
+			],
+			[
+				"bolt",
+				"boltRadius"
+			],
+			[
+				"ro",
+				"roundingRadius"
+			],
+			[
+				"cyl",
+				"cylinder"
+			],
+			[
+				"ste",
+				"stepperMountHoleRadius"
+			],
+			[
+				"stepper",
+				"stepperZ"
+			],
+			[
+				"Slide",
+				"slideRadius"
+			],
+			[
+				"st",
+				"stepperWidth"
+			],
+			[
+				"Ste",
+				"stepperMountY"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/Users/rob/Haskel/Stack.hs",
+			"settings":
+			{
+				"buffer_size": 508,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/rob/Downloads/AO-x-end-clamp.scad",
+			"settings":
+			{
+				"buffer_size": 2623,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/rob/Downloads/gregs-wade-v3.scad",
+			"settings":
+			{
+				"buffer_size": 18186,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "main.cpp",
+			"settings":
+			{
+				"buffer_size": 144,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/rob/RAMPS/STL Files/GrotuxHalf-2.GCODE",
+			"settings":
+			{
+				"buffer_size": 1505094,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/Users/rob/Downloads/configuration.scad",
+			"settings":
+			{
+				"buffer_size": 4273,
+				"line_ending": "Unix",
+				"name": "// PRUSA Mendel"
+			}
+		},
+		{
+			"file": "/Users/rob/Downloads/MCAD/nuts_and_bolts.scad",
+			"settings":
+			{
+				"buffer_size": 3107,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 67.0,
+		"selected_items":
+		[
+			[
+				"pack",
+				"Package Control: Discover Packages"
+			],
+			[
+				"",
+				"Indentation: Reindent Lines"
+			]
+		],
+		"width": 449.0
+	},
+	"console":
+	{
+		"height": 317.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/rob/Beagle/Projects/gl1/main.cpp",
+		"/Users/rob/RAMPS/STL Files/GrotuxHalf_export.gcode",
+		"/Users/rob/RAMPS/STL Files/0.5mm_single_wall_calibration_piece.gcode",
+		"/Volumes/Public/Slide.scad",
+		"/Users/rob/Library/Application Support/Sublime Text 2/Packages/openSCAD.tmbundle/Syntaxes/OpenSCAD.tmLanguage",
+		"/Users/rob/Library/Application Support/Sublime Text 2/Packages/openSCAD.tmbundle/info.plist",
+		"/Users/rob/Library/Application Support/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/Users/rob/Library/Application Support/Sublime Text 2/Packages/User/Plain text.sublime-settings",
+		"/Users/rob/RAMPS/Slic3r/slic3r.pl",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Config.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/ExPolygon.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Extruder.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/ExtrusionLoop.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/ExtrusionPath.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Fill.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Geometry.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/GUI.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Layer.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Line.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Perimeter.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Point.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Polygon.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Polyline.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Print.pm",
+		"/Volumes/NO NAME/slide.gcode",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Skein.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/Surface.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/SVG.pm",
+		"/Users/rob/RAMPS/Slic3r/lib/Slic3r/TriangleMesh.pm",
+		"/Users/rob/RAMPS/STL Files/try1.INI",
+		"/Users/rob/factor/work/palindrome/palindrome-tests.factor",
+		"/Users/rob/test.cpp"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+			""
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"m3_nut",
+			"m3",
+			"block_holes",
+			"arcol_mount_holes",
+			"arcol_mount",
+			"M109",
+			"M190",
+			"S250",
+			"250",
+			"X",
+			"M105",
+			"pulleyOffsetY2",
+			"boltoffset",
+			"epper(",
+			"epper",
+			"stepperMountY",
+			"stepper",
+			"scad",
+			"support-mater",
+			"support"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			"arcol_mount_holes"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 3,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/Users/rob/Haskel/Stack.hs",
+					"settings":
+					{
+						"buffer_size": 508,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								419,
+								419
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Haskell/Haskell.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/Users/rob/Downloads/AO-x-end-clamp.scad",
+					"settings":
+					{
+						"buffer_size": 2623,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2160,
+								2160
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/openSCAD/Syntaxes/OpenSCAD.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 908.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/Users/rob/Downloads/gregs-wade-v3.scad",
+					"settings":
+					{
+						"buffer_size": 18186,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								9763,
+								9763
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/openSCAD/Syntaxes/OpenSCAD.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "main.cpp",
+					"settings":
+					{
+						"buffer_size": 144,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/Users/rob/RAMPS/STL Files/GrotuxHalf-2.GCODE",
+					"settings":
+					{
+						"buffer_size": 1505094,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								23711,
+								23715
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 14317.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "/Users/rob/Downloads/configuration.scad",
+					"settings":
+					{
+						"buffer_size": 4273,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3515,
+								3524
+							]
+						],
+						"settings":
+						{
+							"auto_name": "// PRUSA Mendel",
+							"syntax": "Packages/openSCAD/Syntaxes/OpenSCAD.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1739.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "/Users/rob/Downloads/MCAD/nuts_and_bolts.scad",
+					"settings":
+					{
+						"buffer_size": 3107,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2104,
+								2104
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/openSCAD/Syntaxes/OpenSCAD.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2216.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 34.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 150.0,
+	"status_bar_visible": true
+}
