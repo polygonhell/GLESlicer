@@ -25,7 +25,7 @@ struct Vec3
 		z = zIn;
 	}
 
-	Vec3 &operator = (float v[3])
+	Vec3 &operator = (const float v[3])
 	{
 		x = v[0];
 		y = v[1];
@@ -33,7 +33,7 @@ struct Vec3
 		return *this;
 	}
 
-	Vec3 &operator = (Vec3 &in)
+	Vec3 &operator = (const Vec3 &in)
 	{
 		return *this = in.xyz;
 	}
