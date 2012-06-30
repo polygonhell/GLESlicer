@@ -8,12 +8,16 @@
 #include <fcntl.h>
 #include <termios.h>
 
+#include <tslib.h>
+
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 
 #include "model.h"
 #include "stl.h"
 
+
+#define TOUCHSCREEN_INPUT "/dev/input/event0"
 
 #define PI 3.14159265f
 // Angle in Radians follows OpenGL convention
@@ -249,6 +253,11 @@ int main(int argc, char *argv[])
 	}
 
 
+	struct tsdev *ts = ts_open(TOUCHSCREEN_INPUT, 1);
+	printf("Openned Touch screen %08x\n", ts);
+	int err = ts_config(ts);
+	printf("Config returned %d\n", err);
+
 
 
 	// Create a display surface
@@ -301,9 +310,19 @@ int main(int argc, char *argv[])
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
 
+		struct ts_sample samples[1];
+		memset(samples, 0, sizeof(samples));
 
 		while(true)
 		{
+
+			err = ts_read(ts, samples, 1);
+			if (err < 0)
+				printf("err = %08x\n");
+			printf("X %d -- Y %d -- P %d\n", samples->x, samples->y, samples->pressure);
+			if (samples->x > 400 && samples->pressure >200)
+				break;
+
 
 			if (c)
 				glClearColor(1,1,0,1);
