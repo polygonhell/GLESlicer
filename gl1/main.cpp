@@ -15,70 +15,12 @@
 
 #include "model.h"
 #include "stl.h"
+#include "mat4.h"
 
 
 #define TOUCHSCREEN_INPUT "/dev/input/event0"
 
 #define PI 3.14159265f
-// Angle in Radians follows OpenGL convention
-void Rotate(float *m, float a, float x,float y, float z)
-{
-	float angle=a;
-
-	m[0] = 1+(1-cos(angle))*(x*x-1);
-	m[1] = -z*sin(angle)+(1-cos(angle))*x*y;
-	m[2] = y*sin(angle)+(1-cos(angle))*x*z;
-	m[3] = 0;
-
-	m[4] = z*sin(angle)+(1-cos(angle))*x*y;
-	m[5] = 1+(1-cos(angle))*(y*y-1);
-	m[6] = -x*sin(angle)+(1-cos(angle))*y*z;
-	m[7] = 0;
-
-	m[8] = -y*sin(angle)+(1-cos(angle))*x*z;
-	m[9] = x*sin(angle)+(1-cos(angle))*y*z;
-	m[10] = 1+(1-cos(angle))*(z*z-1);
-	m[11] = 0;
-
-	m[12] = 0;
-	m[13] = 0;
-	m[14] = 0;
-	m[15] = 1;
-}
-
-void Scale(float *m, float s)
-{
-	memset(m, 0, sizeof(float)*16);
-	m[0] = m[5] = m[10] = s;
-	m[15] = 1;
-}
-
-void Multiply(float *mOut, const float *mA, const float *mB)
-{
-
-	/* Perform calculation on a dummy matrix (mRet) */
-	mOut[ 0] = mA[ 0]*mB[ 0] + mA[ 1]*mB[ 4] + mA[ 2]*mB[ 8] + mA[ 3]*mB[12];
-	mOut[ 1] = mA[ 0]*mB[ 1] + mA[ 1]*mB[ 5] + mA[ 2]*mB[ 9] + mA[ 3]*mB[13];
-	mOut[ 2] = mA[ 0]*mB[ 2] + mA[ 1]*mB[ 6] + mA[ 2]*mB[10] + mA[ 3]*mB[14];
-	mOut[ 3] = mA[ 0]*mB[ 3] + mA[ 1]*mB[ 7] + mA[ 2]*mB[11] + mA[ 3]*mB[15];
-
-	mOut[ 4] = mA[ 4]*mB[ 0] + mA[ 5]*mB[ 4] + mA[ 6]*mB[ 8] + mA[ 7]*mB[12];
-	mOut[ 5] = mA[ 4]*mB[ 1] + mA[ 5]*mB[ 5] + mA[ 6]*mB[ 9] + mA[ 7]*mB[13];
-	mOut[ 6] = mA[ 4]*mB[ 2] + mA[ 5]*mB[ 6] + mA[ 6]*mB[10] + mA[ 7]*mB[14];
-	mOut[ 7] = mA[ 4]*mB[ 3] + mA[ 5]*mB[ 7] + mA[ 6]*mB[11] + mA[ 7]*mB[15];
-
-	mOut[ 8] = mA[ 8]*mB[ 0] + mA[ 9]*mB[ 4] + mA[10]*mB[ 8] + mA[11]*mB[12];
-	mOut[ 9] = mA[ 8]*mB[ 1] + mA[ 9]*mB[ 5] + mA[10]*mB[ 9] + mA[11]*mB[13];
-	mOut[10] = mA[ 8]*mB[ 2] + mA[ 9]*mB[ 6] + mA[10]*mB[10] + mA[11]*mB[14];
-	mOut[11] = mA[ 8]*mB[ 3] + mA[ 9]*mB[ 7] + mA[10]*mB[11] + mA[11]*mB[15];
-
-	mOut[12] = mA[12]*mB[ 0] + mA[13]*mB[ 4] + mA[14]*mB[ 8] + mA[15]*mB[12];
-	mOut[13] = mA[12]*mB[ 1] + mA[13]*mB[ 5] + mA[14]*mB[ 9] + mA[15]*mB[13];
-	mOut[14] = mA[12]*mB[ 2] + mA[13]*mB[ 6] + mA[14]*mB[10] + mA[15]*mB[14];
-	mOut[15] = mA[12]*mB[ 3] + mA[13]*mB[ 7] + mA[14]*mB[11] + mA[15]*mB[15];
-
-}
-
 
 
 
@@ -126,7 +68,7 @@ bool CreateContext()
 		return false;
 	}
 
-	printf("Selected Config %d\n", eglConfig);
+	printf("Selected Config %d\n", (int)eglConfig);
 
 
 	eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, (EGLNativeWindowType) NULL, NULL);
@@ -254,7 +196,7 @@ int main(int argc, char *argv[])
 
 
 	struct tsdev *ts = ts_open(TOUCHSCREEN_INPUT, 1);
-	printf("Openned Touch screen %08x\n", ts);
+	printf("Openned Touch screen %08x\n", (int)ts);
 	int err = ts_config(ts);
 	printf("Config returned %d\n", err);
 
@@ -306,7 +248,7 @@ int main(int argc, char *argv[])
 	{
 		int c = 1;
 		float angle = 0;
-		float m[16], m1[16], m2[16];
+		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
 
@@ -318,7 +260,7 @@ int main(int argc, char *argv[])
 
 			err = ts_read(ts, samples, 1);
 			if (err < 0)
-				printf("err = %08x\n");
+				printf("err = %08x\n", err);
 			printf("X %d -- Y %d -- P %d\n", samples->x, samples->y, samples->pressure);
 			if (samples->x > 400 && samples->pressure >200)
 				break;
@@ -333,14 +275,14 @@ int main(int argc, char *argv[])
 
 			glClear(GL_COLOR_BUFFER_BIT);
 
-			Scale(m1, 0.01f);
-			Rotate(m2, angle, 0.7071f, 0.7071f, 0);
+			Mat4::Scale(m1, 0.01f);
+			Mat4::Rotate(m2, angle, 0.7071f, 0.7071f, 0);
 			angle += 0.03f;
 			if (angle > 2*PI)
 				angle -= 2*PI;
-			Multiply(m, m1, m2);
+			Mat4::Multiply(m, m1, m2);
 
-			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m);
+			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m.m);
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
