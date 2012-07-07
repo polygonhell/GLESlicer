@@ -53,6 +53,7 @@ bool Model::CreateGLBuffers()
 
 	delete[] verts;
 	delete[] inds;
+	return true;
 
 
 }

@@ -67,7 +67,7 @@ public:
 
 	uint32_t vbo;
 	uint32_t ibo;
-	uint32_t triCount;
+	int32_t triCount;
 
 
 	Triangle *tris;

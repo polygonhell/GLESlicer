@@ -3,11 +3,8 @@
 	[
 		{
 			"name": "Source",
-			"path": "/Users/rob/Beagle/Projects/gl1/",
+			"path": "/Users/rob/Beagle/Projects/GLESlicer/gl1/",
 			"file_exclude_patterns": ["*.out"]
-		},
-		{
-			"path": "/Users/rob/Library/Application Support/Sublime Text 2/Packages/Default"
 		}
 	],
 
@@ -15,7 +12,7 @@
 	[
 		{
 			"name": "Beagle CPP",
-			"cmd": ["ssh", "root@beaglebone.local", "cd ~/Projects/gl1; make"],
+			"cmd": ["ssh", "root@beaglebone.local", "cd ~/Projects/GLESlicer/gl1; make"],
 			"file_regex": "^[ ]*(.+):([0-9]*):([0-9]*): error:.*"
 		}
 	]
