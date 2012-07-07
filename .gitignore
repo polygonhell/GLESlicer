@@ -1,4 +1,3 @@
-
 gl1/._grotux.stl
-
-gl1/a.out
+gl1/*.o
+gl1/gl1
