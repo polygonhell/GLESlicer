@@ -1,14 +1,20 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <unistd.h>
-
 #include <signal.h>
 #include <fcntl.h>
-#include <termios.h>
 
+#ifndef WIN32
+#include <unistd.h>
+#include <termios.h>
 #include <tslib.h>
+#endif
+
+#ifdef WIN32
+#include "Windows\window.h"
+#endif
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
@@ -43,7 +49,8 @@ bool CreateContext()
 	EGLConfig eglContext = 0;
 
 	// Get the default display
-	eglDisplay = eglGetDisplay((EGLNativeDisplayType)0);
+	eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+//	eglDisplay = eglGetDisplay((EGLNativeDisplayType)0);
 	EGLint majorVersion, minorVersion;
 	if (!eglInitialize(eglDisplay, &majorVersion, &minorVersion))
 	{
@@ -70,8 +77,13 @@ bool CreateContext()
 
 	printf("Selected Config %d\n", (int)eglConfig);
 
+	EGLNativeWindowType hWind = (EGLNativeWindowType)NULL;
+#ifdef WIN32
+	hWind = (EGLNativeWindowType)Windows::Init();
+#endif
 
-	eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, (EGLNativeWindowType) NULL, NULL);
+
+	eglSurface = eglCreateWindowSurface(eglDisplay, eglConfig, (EGLNativeWindowType) hWind, NULL);
 	if (eglGetError() != EGL_SUCCESS)
 	{
 		printf("Create Surface failed\n");
@@ -161,20 +173,9 @@ int main(int argc, char *argv[])
 	printf("Max = %5.2f, %5.2f, %5.2f\n", model.bbMax.x, model.bbMax.y, model.bbMax.z);
 
 
-
+#ifndef WIN32
 	signal( SIGTTIN, SIG_IGN );
 	signal( SIGTTOU, SIG_IGN );
-	
-	// struct termios termio, termio_orig;
-	// int devfd=open("/dev/tty", O_RDWR|O_NDELAY);
-	// printf("devfd = %d\n", devfd);
-	// tcgetattr(devfd,&termio_orig);
-	// tcgetattr(devfd,&termio);
-	// cfmakeraw(&termio);
-	// termio.c_oflag |= OPOST | ONLCR; // Turn back on cr-lf expansion on output
-	// termio.c_cc[VMIN]=1;
-	// termio.c_cc[VTIME]=0;
-	// tcsetattr(devfd,TCSANOW,&termio);
 
 	// Get rid of blinking cursor
 	FILE *tty = 0;
@@ -200,7 +201,7 @@ int main(int argc, char *argv[])
 	int err = ts_config(ts);
 	printf("Config returned %d\n", err);
 
-
+#endif
 
 	// Create a display surface
 	if (!CreateContext())
@@ -236,11 +237,6 @@ int main(int argc, char *argv[])
 	glUseProgram(program);
 
 	// Create a vertex buffer
-	GLuint vbo;
-	glGenBuffers(1, &vbo);
-	glBindBuffer(GL_ARRAY_BUFFER, vbo);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-
 	model.CreateGLBuffers();
 
 
@@ -252,19 +248,22 @@ int main(int argc, char *argv[])
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
 
+#ifndef WIN32
 		struct ts_sample samples[1];
 		memset(samples, 0, sizeof(samples));
+#endif
 
 		while(true)
 		{
 
+#ifndef WIN32
 			err = ts_read(ts, samples, 1);
 			if (err < 0)
 				printf("err = %08x\n", err);
 			printf("X %d -- Y %d -- P %d\n", samples->x, samples->y, samples->pressure);
 			if (samples->x > 400 && samples->pressure >200)
 				break;
-
+#endif
 
 			if (c)
 				glClearColor(1,1,0,1);
@@ -287,11 +286,17 @@ int main(int argc, char *argv[])
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-			//glDrawArrays(GL_TRIANGLES, 0, 4002);
+			//glDrawArrays(GL_TRIANGLES, 0, model.triCount *3);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model.ibo);
-			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_INT, 0);
+			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_SHORT, 0);
 
 			eglSwapBuffers(eglDisplay, eglSurface);
+
+#ifdef WIN32
+			if (!Windows::Update())
+				break;
+			Sleep(10);
+#endif
 		}
 
 	}

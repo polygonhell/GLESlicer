@@ -30,7 +30,7 @@ bool Model::CreateGLBuffers()
 	glBindBuffer(GL_ARRAY_BUFFER, vbo);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
 	Vec3 *verts = new Vec3[triCount *3];
-	uint32_t *inds = new uint32_t[triCount *3];
+	uint16_t *inds = new uint16_t[triCount *3];
 
 	int index = 0;
 	for (int i = 0; i < triCount; i++)
@@ -44,11 +44,12 @@ bool Model::CreateGLBuffers()
 	}
 
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vec3) * triCount * 3, verts, GL_STATIC_DRAW);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * triCount * 3, inds, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint16_t) * triCount * 3, inds, GL_STATIC_DRAW);
+	int err = glGetError();
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	int err = glGetError();
+	err = glGetError();
 	printf("err = %d\n", err);
 
 	delete[] verts;

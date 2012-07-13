@@ -37,8 +37,8 @@ namespace stl
 			tri buffer;
 			uint8_t header[80];
 
-			outModel->bbMin = (float[3]){9999.0f, 9999.0f, 9999.0f};
-			outModel->bbMax = (float[3]){-9999.0f, -9999.0f, -9999.0f};
+			outModel->bbMin = Vec3(9999.0f, 9999.0f, 9999.0f);
+			outModel->bbMax = Vec3(-9999.0f, -9999.0f, -9999.0f);
 
 			uint32_t triCount;
 			uint32_t index = 0;
@@ -89,7 +89,8 @@ namespace stl
 		}
 cleanup:
 		printf("\n\n");
-		fclose(fin);
+		if (fin)
+			fclose(fin);
 
 
 		return retval;

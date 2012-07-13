@@ -1,6 +1,8 @@
 
+#ifndef min
 #define min(x,y) (x)<(y)?(x):(y) 
 #define max(x,y) (x)>(y)?(x):(y) 
+#endif
 
 struct Vec3
 {
@@ -14,6 +16,14 @@ struct Vec3
 		};
 	};
 
+	Vec3() {}
+
+	Vec3(float xIn, float yIn, float zIn)
+	{
+		x = xIn;
+		y = yIn;
+		z = zIn;
+	}
 
 	Vec3 &operator = (float v[3])
 	{
