@@ -254,7 +254,6 @@ int main(int argc, char *argv[])
 	glGenBuffers(1, &FSQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-	int err = glGetError();
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
@@ -267,8 +266,8 @@ int main(int argc, char *argv[])
 
 
 	{
-		float zSlice = 0;
-		float zVel = 0.002f;
+		float zSlice = 0.3f;
+		float zVel = 0.01f;
 		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
@@ -307,6 +306,8 @@ int main(int argc, char *argv[])
 			if (zSlice > 1 || zSlice < 0)
 				zVel *= -1;
 
+			printf("Z = %f\n", zSlice);
+
 
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
@@ -317,17 +318,26 @@ int main(int argc, char *argv[])
 
 			//glCullFace(GL_FRONT);
 			glEnable(GL_STENCIL_TEST);
-			glStencilFunc(GL_ALWAYS, 0, 255);
-			glStencilOpSeparate(GL_BACK, GL_INCR_WRAP, GL_INCR_WRAP, GL_INCR_WRAP);
-			glStencilOpSeparate(GL_FRONT, GL_DECR_WRAP, GL_DECR_WRAP, GL_DECR_WRAP);
-			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_SHORT, 0);
+			glEnable(GL_CULL_FACE);
 
+
+			glStencilFunc(GL_ALWAYS, 0, 255);
+
+			// PowerVR does not seem to support StencilOpSeparate
+			glStencilOp(GL_INCR_WRAP, GL_INCR_WRAP, GL_INCR_WRAP);
+			glCullFace(GL_FRONT);
+			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_SHORT, 0);
+			glStencilOp(GL_DECR_WRAP, GL_DECR_WRAP, GL_DECR_WRAP);
+			glCullFace(GL_BACK);
+			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_SHORT, 0);
 
 			glStencilFunc(GL_LESS, 0, 255);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			// Just draw a quad
 			glColorMask(1,1,1,1);
+			// Fix for bad PowerVR driver
+			glClear(GL_COLOR_BUFFER_BIT);
 
 			Mat4::Identity(m1);
 			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
