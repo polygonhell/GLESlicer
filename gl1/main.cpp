@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 #ifdef WIN32
 			if (!Windows::Update())
 				break;
-//			Sleep(1);
+			Sleep(16);
 #endif
 		}
 
