@@ -36,6 +36,7 @@
 
 EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 						EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+						EGL_STENCIL_SIZE, 8,
 						EGL_NONE
 						};
 EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
@@ -132,16 +133,24 @@ GLint CompileShader(GLuint type, const char *source)
 
 
 const char* fragShaderCode = "\
+	uniform highp float zMin;\
+	varying highp float zPos;\
 	void main (void)\
 	{\
-		gl_FragColor = vec4(0.0, 0.0, 1.0 ,1.0);\
+		if (zPos > zMin)\
+			discard;\
+		else\
+			gl_FragColor = vec4(0.0, 0.0, 1.0 ,1.0);\
 	}";
+
 const char* vertShaderCode = "\
 	attribute highp vec4	myVertex;\
 	uniform mediump mat4	myPMVMatrix;\
+	varying float zPos;\
 	void main(void)\
 	{\
 		gl_Position = myPMVMatrix * myVertex;\
+		zPos = gl_Position.z;\
 	}";
 
 GLint fragShader, vertShader, program;
@@ -154,9 +163,14 @@ float identityMat[] =
 	0.0f,0.0f,0.0f,1.0f
 };
 
-GLfloat verts[] = {	-40.0f,-40.0f,0.0f, // Position
-					40.0f ,-40.0f,0.0f,
-					0.0f ,40.0f ,0.0f};
+GLfloat verts[] = {	
+					-0.9f,0.9f,0.0f, 
+					-0.9f,-0.9f,0.0f, 
+					 0.9f,0.9f,0.0f, 
+					 0.9f,-0.9f,0.0f
+					};
+
+uint32_t FSQuad;
 
 
 int main(int argc, char *argv[])
@@ -236,17 +250,29 @@ int main(int argc, char *argv[])
 
 	glUseProgram(program);
 
+	// Full screen quad
+	glGenBuffers(1, &FSQuad);
+	glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+	int err = glGetError();
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+
+
+
+
 	// Create a vertex buffer
 	model.CreateGLBuffers();
-
+	
 
 
 	{
-		int c = 1;
-		float angle = 0;
+		float zSlice = 0;
+		float zVel = 0.002f;
 		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
+		int zMinLoc = glGetUniformLocation(program, "zMin");
 
 #ifndef WIN32
 		struct ts_sample samples[1];
@@ -265,37 +291,60 @@ int main(int argc, char *argv[])
 				break;
 #endif
 
-			if (c)
-				glClearColor(1,1,0,1);
-			else
-				glClearColor(0,1,1,1);
+			glClearColor(1,1,0,1);
+			glClearStencil(0);
 
-			c ^= 1;
-
-			glClear(GL_COLOR_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+			glDisable(GL_CULL_FACE);
 
 			Mat4::Scale(m1, 0.01f);
-			Mat4::Rotate(m2, angle, 0.7071f, 0.7071f, 0);
-			angle += 0.03f;
-			if (angle > 2*PI)
-				angle -= 2*PI;
-			Mat4::Multiply(m, m1, m2);
 
-			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m.m);
+			glColorMask(0,0,0,0);
+			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
+			glUniform1f(zMinLoc, zSlice);
+
+			zSlice += zVel;
+			if (zSlice > 1 || zSlice < 0)
+				zVel *= -1;
+
+
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 			//glDrawArrays(GL_TRIANGLES, 0, model.triCount *3);
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, model.ibo);
+
+			//glCullFace(GL_FRONT);
+			glEnable(GL_STENCIL_TEST);
+			glStencilFunc(GL_ALWAYS, 0, 255);
+			glStencilOpSeparate(GL_BACK, GL_INCR_WRAP, GL_INCR_WRAP, GL_INCR_WRAP);
+			glStencilOpSeparate(GL_FRONT, GL_DECR_WRAP, GL_DECR_WRAP, GL_DECR_WRAP);
 			glDrawElements(GL_TRIANGLES, model.triCount * 3, GL_UNSIGNED_SHORT, 0);
+
+
+			glStencilFunc(GL_LESS, 0, 255);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+			// Just draw a quad
+			glColorMask(1,1,1,1);
+
+			Mat4::Identity(m1);
+			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
+
+			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
+			glEnableVertexAttribArray(VERTEX_ARRAY);
+			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 
 			eglSwapBuffers(eglDisplay, eglSurface);
 
 #ifdef WIN32
 			if (!Windows::Update())
 				break;
-			Sleep(10);
+//			Sleep(1);
 #endif
 		}
 

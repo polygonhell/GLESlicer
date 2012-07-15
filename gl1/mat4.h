@@ -14,6 +14,8 @@ struct Mat4
 
 	// Basic operations
 	// Angle in Radians follows OpenGL convention
+	static void Identity(Mat4 &mat);
+
 	static void Rotate(Mat4 &m, float a, float x,float y, float z);
 	static void Scale(Mat4 &mat, float s);
 	static void Multiply(Mat4 &mOut, const Mat4 &mA, const Mat4 &mB);
