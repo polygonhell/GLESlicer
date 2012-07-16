@@ -18,6 +18,7 @@
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
 
 #include "model.h"
 #include "stl.h"
@@ -159,7 +160,7 @@ GLint fragShader, vertShader, program;
 
 const char *texturedQuadVS = "\
 	attribute highp vec4 myPos;\
-	varying vec2 tc0;\
+	varying highp vec2 tc0;\
 	void main(void)\
 	{\
 		gl_Position = myPos;\
@@ -168,7 +169,7 @@ const char *texturedQuadVS = "\
 
 const char *texturedQuadPS = "\
 	uniform sampler2D color_texture;\
-	varying vec2 tc0;\
+	varying highp vec2 tc0;\
 	void main()\
 	{\
 		gl_FragColor = texture2D(color_texture, tc0);\
@@ -322,8 +323,8 @@ int main(int argc, char *argv[])
 
 	glGenRenderbuffers(1, &rbo_depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 2048, 2048);
-	int err = glGetError();
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24_OES, 2048, 2048);
+	err = glGetError();
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
 	glGenRenderbuffers(1, &rbo_stencil);
@@ -337,18 +338,15 @@ int main(int argc, char *argv[])
 	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rbo_texture, 0);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth);
-//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_stencil);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_stencil);
 
 	GLenum status;
 	if ((status = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
-		fprintf(stderr, "glCheckFramebufferStatus: error %p", status);
+		fprintf(stderr, "glCheckFramebufferStatus: error %d", status);
 		return 0;
 	}
-	int32_t val2;
-	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &val2);
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &val2);
 
 
 
@@ -359,7 +357,7 @@ int main(int argc, char *argv[])
 
 	{
 		float zSlice = 0.3f;
-		float zVel = 0.01f;
+		float zVel = 0; //0.01f;
 		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
@@ -397,7 +395,7 @@ int main(int argc, char *argv[])
 
 			Mat4::Scale(m1, 0.01f);
 
-			//glColorMask(0,0,0,0);
+			glColorMask(0,0,0,0);
 			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
 			glUniform1f(zMinLoc, zSlice);
 
@@ -406,8 +404,6 @@ int main(int argc, char *argv[])
 				zVel *= -1;
 
 			printf("Z = %f\n", zSlice);
-
-
 
 			glUseProgram(program);
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
@@ -436,6 +432,9 @@ int main(int argc, char *argv[])
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			//// Just draw a quad
+			glDisable(GL_CULL_FACE);
+
+
 			glColorMask(1,1,1,1);
 			//// Fix for bad PowerVR driver
 			glClear(GL_COLOR_BUFFER_BIT);
