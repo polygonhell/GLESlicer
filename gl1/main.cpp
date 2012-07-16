@@ -155,6 +155,29 @@ const char* vertShaderCode = "\
 
 GLint fragShader, vertShader, program;
 
+
+
+const char *texturedQuadVS = "\
+	attribute highp vec4 myPos;\
+	varying vec2 tc0;\
+	void main(void)\
+	{\
+		gl_Position = myPos;\
+		tc0 = myPos.xy;\
+	}";
+
+const char *texturedQuadPS = "\
+	uniform sampler2D color_texture;\
+	varying vec2 tc0;\
+	void main()\
+	{\
+		gl_FragColor = texture2D(color_texture, tc0);\
+	}";
+
+GLint quadPShader, quadVShader, QuadProgram;
+
+
+
 float identityMat[] =
 {
 	1.0f,0.0f,0.0f,0.0f,
@@ -248,6 +271,34 @@ int main(int argc, char *argv[])
 
 
 
+	quadPShader = CompileShader(GL_FRAGMENT_SHADER, texturedQuadPS);
+	if (quadPShader < 0)
+		goto cleanup;
+	quadVShader = CompileShader(GL_VERTEX_SHADER, texturedQuadVS);
+	if (quadVShader < 0)
+		goto cleanup;
+
+	QuadProgram = glCreateProgram();
+	glAttachShader(QuadProgram, quadPShader);
+	glAttachShader(QuadProgram, quadVShader);
+	glBindAttribLocation(QuadProgram, VERTEX_ARRAY, "myPos");
+	glLinkProgram(QuadProgram);
+    glGetProgramiv(QuadProgram, GL_LINK_STATUS, &bLinked);
+	if (!bLinked)
+	{
+		int ui32InfoLogLength, ui32CharsWritten;
+		glGetProgramiv(QuadProgram, GL_INFO_LOG_LENGTH, &ui32InfoLogLength);
+		char* pszInfoLog = (char *)malloc(ui32InfoLogLength);
+		glGetProgramInfoLog(program, ui32InfoLogLength, &ui32CharsWritten, pszInfoLog);
+		printf("Failed to link program: %s\n", pszInfoLog);
+		free(pszInfoLog);
+		goto cleanup;
+	}
+
+
+
+
+
 	glUseProgram(program);
 
 	// Full screen quad
@@ -257,6 +308,47 @@ int main(int argc, char *argv[])
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
+	// Create an offscreen surface for rendering
+	uint32_t fbo, rbo_texture, rbo_stencil, rbo_depth;
+	glActiveTexture(GL_TEXTURE0);
+	glGenTextures(1, &rbo_texture);
+	glBindTexture(GL_TEXTURE_2D, rbo_texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2048, 2048, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glGenRenderbuffers(1, &rbo_depth);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT16, 2048, 2048);
+	int err = glGetError();
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+	glGenRenderbuffers(1, &rbo_stencil);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo_stencil);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, 2048, 2048);
+	err = glGetError();
+	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rbo_texture, 0);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth);
+//	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_stencil);
+
+	GLenum status;
+	if ((status = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
+		fprintf(stderr, "glCheckFramebufferStatus: error %p", status);
+		return 0;
+	}
+	int32_t val2;
+	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &val2);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glGetRenderbufferParameteriv(GL_RENDERBUFFER, GL_RENDERBUFFER_INTERNAL_FORMAT, &val2);
 
 
 
@@ -290,6 +382,13 @@ int main(int argc, char *argv[])
 				break;
 #endif
 
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glClearColor(1,1,1,1);
+			glClearStencil(0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
 			glClearColor(1,1,0,1);
 			glClearStencil(0);
 
@@ -298,7 +397,7 @@ int main(int argc, char *argv[])
 
 			Mat4::Scale(m1, 0.01f);
 
-			glColorMask(0,0,0,0);
+			//glColorMask(0,0,0,0);
 			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
 			glUniform1f(zMinLoc, zSlice);
 
@@ -309,6 +408,8 @@ int main(int argc, char *argv[])
 			printf("Z = %f\n", zSlice);
 
 
+
+			glUseProgram(program);
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -334,9 +435,9 @@ int main(int argc, char *argv[])
 			glStencilFunc(GL_LESS, 0, 255);
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-			// Just draw a quad
+			//// Just draw a quad
 			glColorMask(1,1,1,1);
-			// Fix for bad PowerVR driver
+			//// Fix for bad PowerVR driver
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			Mat4::Identity(m1);
@@ -348,6 +449,25 @@ int main(int argc, char *argv[])
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
+
+			// Copy the offscreen buffer to the output buffer
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+			glDisable(GL_STENCIL_TEST);
+
+			glUseProgram(QuadProgram);
+			glActiveTexture(GL_TEXTURE0);
+			int texture_location = glGetUniformLocation(QuadProgram, "color_texture");
+			glUniform1i(texture_location, 0);
+			glBindTexture(GL_TEXTURE_2D, rbo_texture);
+
+			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
+			glEnableVertexAttribArray(VERTEX_ARRAY);
+			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+			glBindTexture(GL_TEXTURE_2D, 0);
 
 			eglSwapBuffers(eglDisplay, eglSurface);
 
