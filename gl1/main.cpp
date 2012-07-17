@@ -328,46 +328,13 @@ int main(int argc, char *argv[])
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-<<<<<<< HEAD
-	glGenRenderbuffers(1, &rbo_depth);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24_OES, 2048, 2048);
-	err = glGetError();
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-	glGenRenderbuffers(1, &rbo_stencil);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo_stencil);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX8, 2048, 2048);
-	err = glGetError();
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-
-	glGenFramebuffers(1, &fbo);
-	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rbo_texture, 0);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_depth);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_stencil);
-
-	GLenum status;
-	if ((status = glCheckFramebufferStatus(GL_FRAMEBUFFER)) != GL_FRAMEBUFFER_COMPLETE) {
-		fprintf(stderr, "glCheckFramebufferStatus: error %d", status);
-		return 0;
-	}
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-=======
->>>>>>> Use a PBuffer object instead of a FBObject
-
 
 	// Create a vertex buffer
 	model.CreateGLBuffers();
 	
-
-
 	{
 		float zSlice = 0.3f;
-		float zVel = 0; //0.01f;
+		float zVel = 0.01f;
 		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
@@ -394,14 +361,12 @@ int main(int argc, char *argv[])
 			int err = eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext);
 
 			glClearColor(1,1,0,1);
-
 			glClearStencil(0);
-
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			Mat4::Scale(m1, 0.01f);
 
-			glColorMask(0,0,0,0);
+			//glColorMask(0,0,0,0);
 			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
 			glUniform1f(zMinLoc, zSlice);
 
@@ -411,12 +376,6 @@ int main(int argc, char *argv[])
 
 			printf("Z = %f\n", zSlice);
 
-<<<<<<< HEAD
-			glUseProgram(program);
-=======
-
-
->>>>>>> Use a PBuffer object instead of a FBObject
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -443,16 +402,8 @@ int main(int argc, char *argv[])
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			//// Just draw a quad
-<<<<<<< HEAD
-			glDisable(GL_CULL_FACE);
-
-
-			glColorMask(1,1,1,1);
-=======
-			//glColorMask(1,1,1,1);
->>>>>>> Use a PBuffer object instead of a FBObject
-			//// Fix for bad PowerVR driver
 #if 1
+			//glColorMask(1, 1, 1, 1);		// Brokwn in PVR driver
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			Mat4::Identity(m1);
@@ -496,7 +447,7 @@ int main(int argc, char *argv[])
 #ifdef WIN32
 			if (!Windows::Update())
 				break;
-			//Sleep(10);
+			Sleep(10);
 #endif
 		}
 
