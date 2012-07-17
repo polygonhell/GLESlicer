@@ -40,15 +40,22 @@ EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 						EGL_STENCIL_SIZE, 8,
 						EGL_NONE
 						};
+EGLint pbufferAttr[] = { 
+						EGL_WIDTH, 2048,
+						EGL_HEIGHT, 2048,
+						EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
+						EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
+						EGL_NONE
+						};
 EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
 
 EGLDisplay eglDisplay = 0;
 EGLSurface eglSurface = 0;
+EGLConfig eglConfig	= 0;
+EGLConfig eglContext = 0;
 
 bool CreateContext()
 {
-	EGLConfig eglConfig	= 0;
-	EGLConfig eglContext = 0;
 
 	// Get the default display
 	eglDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
@@ -188,10 +195,10 @@ float identityMat[] =
 };
 
 GLfloat verts[] = {	
-					-0.9f,0.9f,0.0f, 
-					-0.9f,-0.9f,0.0f, 
-					 0.9f,0.9f,0.0f, 
-					 0.9f,-0.9f,0.0f
+					-1.0f,1.0f,0.0f, 
+					-1.0f,-1.0f,0.0f, 
+					 1.0f,1.0f,0.0f, 
+					 1.0f,-1.0f,0.0f
 					};
 
 uint32_t FSQuad;
@@ -297,11 +304,6 @@ int main(int argc, char *argv[])
 	}
 
 
-
-
-
-	glUseProgram(program);
-
 	// Full screen quad
 	glGenBuffers(1, &FSQuad);
 	glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
@@ -309,18 +311,24 @@ int main(int argc, char *argv[])
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-	// Create an offscreen surface for rendering
-	uint32_t fbo, rbo_texture, rbo_stencil, rbo_depth;
-	glActiveTexture(GL_TEXTURE0);
-	glGenTextures(1, &rbo_texture);
-	glBindTexture(GL_TEXTURE_2D, rbo_texture);
+	// Create a PBuffer
+	EGLSurface pbuffer = eglCreatePbufferSurface(eglDisplay, eglConfig, pbufferAttr);
+	if (pbuffer == EGL_NO_SURFACE)
+	{
+		printf("Failed to Create PBuffer\n");
+		goto cleanup;
+	}
+
+	uint32_t pb_texture;
+	glGenTextures(1, &pb_texture);
+	glBindTexture(GL_TEXTURE_2D, pb_texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2048, 2048, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+<<<<<<< HEAD
 	glGenRenderbuffers(1, &rbo_depth);
 	glBindRenderbuffer(GL_RENDERBUFFER, rbo_depth);
 	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24_OES, 2048, 2048);
@@ -348,6 +356,8 @@ int main(int argc, char *argv[])
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+=======
+>>>>>>> Use a PBuffer object instead of a FBObject
 
 
 	// Create a vertex buffer
@@ -367,7 +377,6 @@ int main(int argc, char *argv[])
 		struct ts_sample samples[1];
 		memset(samples, 0, sizeof(samples));
 #endif
-
 		while(true)
 		{
 
@@ -379,19 +388,16 @@ int main(int argc, char *argv[])
 			if (samples->x > 400 && samples->pressure >200)
 				break;
 #endif
+			glUseProgram(program);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glClearColor(1,1,1,1);
-			glClearStencil(0);
-			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-			glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+			int err = eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext);
 
 			glClearColor(1,1,0,1);
+
 			glClearStencil(0);
 
-			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-			glDisable(GL_CULL_FACE);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			Mat4::Scale(m1, 0.01f);
 
@@ -405,7 +411,12 @@ int main(int argc, char *argv[])
 
 			printf("Z = %f\n", zSlice);
 
+<<<<<<< HEAD
 			glUseProgram(program);
+=======
+
+
+>>>>>>> Use a PBuffer object instead of a FBObject
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
 			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
@@ -432,11 +443,16 @@ int main(int argc, char *argv[])
 			glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 			//// Just draw a quad
+<<<<<<< HEAD
 			glDisable(GL_CULL_FACE);
 
 
 			glColorMask(1,1,1,1);
+=======
+			//glColorMask(1,1,1,1);
+>>>>>>> Use a PBuffer object instead of a FBObject
 			//// Fix for bad PowerVR driver
+#if 1
 			glClear(GL_COLOR_BUFFER_BIT);
 
 			Mat4::Identity(m1);
@@ -448,17 +464,23 @@ int main(int argc, char *argv[])
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
-
+#endif
 			// Copy the offscreen buffer to the output buffer
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			err = eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
 
 			glDisable(GL_STENCIL_TEST);
+			glClearColor(1,1,1,1);
+			glClearStencil(0);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
 
 			glUseProgram(QuadProgram);
 			glActiveTexture(GL_TEXTURE0);
 			int texture_location = glGetUniformLocation(QuadProgram, "color_texture");
 			glUniform1i(texture_location, 0);
-			glBindTexture(GL_TEXTURE_2D, rbo_texture);
+			glBindTexture(GL_TEXTURE_2D, pb_texture);
+			err = eglBindTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
+
 
 			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
@@ -467,13 +489,14 @@ int main(int argc, char *argv[])
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
+			err = eglReleaseTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
 
 			eglSwapBuffers(eglDisplay, eglSurface);
 
 #ifdef WIN32
 			if (!Windows::Update())
 				break;
-			Sleep(16);
+			//Sleep(10);
 #endif
 		}
 
