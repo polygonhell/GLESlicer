@@ -35,9 +35,15 @@
 #define VERTEX_ARRAY	0
 
 
-EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
+EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
 						EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+						EGL_RED_SIZE, 5,
+						EGL_GREEN_SIZE, 5,
+						EGL_BLUE_SIZE, 5,
+						//EGL_ALPHA_SIZE, 1,
 						EGL_STENCIL_SIZE, 8,
+
+						EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
 						EGL_NONE
 						};
 EGLint pbufferAttr[] = { 
@@ -45,6 +51,8 @@ EGLint pbufferAttr[] = {
 						EGL_HEIGHT, 2048,
 						EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
 						EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
+//						EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
+//						EGL_SURFACE_TYPE, EGL_PBUFFER_BIT | EGL_WINDOW_BIT,
 						EGL_NONE
 						};
 EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
@@ -53,6 +61,7 @@ EGLDisplay eglDisplay = 0;
 EGLSurface eglSurface = 0;
 EGLConfig eglConfig	= 0;
 EGLConfig eglContext = 0;
+EGLConfig eglContext2 = 0;
 
 bool CreateContext()
 {
@@ -100,6 +109,13 @@ bool CreateContext()
 	}
 
 	eglContext = eglCreateContext(eglDisplay, eglConfig, NULL, contextAttribs);
+	if (eglGetError() != EGL_SUCCESS)
+	{
+		printf("Create Context failed\n");
+		return false;
+	}
+
+	eglContext2 = eglCreateContext(eglDisplay, eglConfig, NULL, contextAttribs);
 	if (eglGetError() != EGL_SUCCESS)
 	{
 		printf("Create Context failed\n");
@@ -195,10 +211,10 @@ float identityMat[] =
 };
 
 GLfloat verts[] = {	
-					-1.0f,1.0f,0.0f, 
-					-1.0f,-1.0f,0.0f, 
-					 1.0f,1.0f,0.0f, 
-					 1.0f,-1.0f,0.0f
+					-0.9f,0.9f,0.0f, 
+					-0.9f,-0.9f,0.0f, 
+					 0.9f,0.9f,0.0f, 
+					 0.9f,-0.9f,0.0f
 					};
 
 uint32_t FSQuad;
@@ -208,7 +224,9 @@ int main(int argc, char *argv[])
 {
 	printf("Trivial EGL test\n");
 
+	uint32_t m_uDepthBuffer, m_uiTextureToRenderTo, m_uFBO;
 
+	EGLSurface pbuffer;
 	Model model;
 	bool val = stl::convert("grotux.stl", &model);
 	if (!val)
@@ -311,8 +329,53 @@ int main(int argc, char *argv[])
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
+{
+	// See if we can create a fbo with a stencil buffer
+	// Generate and bind a render buffer which will become a depth buffer shared between our two FBOs
+	glGenRenderbuffers(1, &m_uDepthBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, m_uDepthBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
+	err = glGetError(); printf("errrrrr = %d\n", err);
+	
+	// Create a texture for rendering to
+	glGenTextures(1, &m_uiTextureToRenderTo);
+	glBindTexture(GL_TEXTURE_2D, m_uiTextureToRenderTo);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Create the object that will allow us to render to the aforementioned texture
+	glGenFramebuffers(1, &m_uFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
+
+	// Attach the texture to the FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_uiTextureToRenderTo, 0);
+
+	// Attach the depth buffer we created earlier to our FBO.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_uDepthBuffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_uDepthBuffer);
+	err = glGetError(); printf("errrrrr = %d\n", err);
+
+	GLuint uStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if(uStatus != GL_FRAMEBUFFER_COMPLETE)
+	{
+		printf("ERROR: Failed to initialise FBO - %08x\n", uStatus);
+		return false;
+	}
+	printf("got somewhere?");
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+
+
+
 	// Create a PBuffer
-	EGLSurface pbuffer = eglCreatePbufferSurface(eglDisplay, eglConfig, pbufferAttr);
+	pbuffer = eglCreatePbufferSurface(eglDisplay, eglConfig, pbufferAttr);
 	if (pbuffer == EGL_NO_SURFACE)
 	{
 		printf("Failed to Create PBuffer\n");
@@ -321,9 +384,10 @@ int main(int argc, char *argv[])
 
 	uint32_t pb_texture;
 	glGenTextures(1, &pb_texture);
+	printf("Texture created %d\n", pb_texture);
 	glBindTexture(GL_TEXTURE_2D, pb_texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -358,10 +422,13 @@ int main(int argc, char *argv[])
 			glUseProgram(program);
 
 
-			int err = eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext);
+			// int err = eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext2);
+			// printf("Err1 = %d\n", err);
+			glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
 
 			glClearColor(1,1,0,1);
 			glClearStencil(0);
+			glDisable(GL_DEPTH_TEST);
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			Mat4::Scale(m1, 0.01f);
@@ -417,7 +484,10 @@ int main(int argc, char *argv[])
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 #endif
 			// Copy the offscreen buffer to the output buffer
-			err = eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			// err = eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
+			// printf("Err1 = %d\n", err);
+
 
 			glDisable(GL_STENCIL_TEST);
 			glClearColor(1,1,1,1);
@@ -425,13 +495,17 @@ int main(int argc, char *argv[])
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 
+			glEnable(GL_TEXTURE_2D);
 			glUseProgram(QuadProgram);
 			glActiveTexture(GL_TEXTURE0);
 			int texture_location = glGetUniformLocation(QuadProgram, "color_texture");
 			glUniform1i(texture_location, 0);
-			glBindTexture(GL_TEXTURE_2D, pb_texture);
-			err = eglBindTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
 
+			glBindTexture(GL_TEXTURE_2D, m_uiTextureToRenderTo);
+			// err = eglBindTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
+			// printf("Err2 = %d\n", err);
+			// err = eglGetError();
+			// printf("Extended error %08x\n", err);
 
 			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
@@ -440,9 +514,14 @@ int main(int argc, char *argv[])
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
-			err = eglReleaseTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
+			// err = eglReleaseTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
+			// printf("Err2 = %d\n", err);
+			// err = eglGetError();
+			// printf("Extended error %08x\n", err);
 
 			eglSwapBuffers(eglDisplay, eglSurface);
+
+			// while(1);
 
 #ifdef WIN32
 			if (!Windows::Update())
