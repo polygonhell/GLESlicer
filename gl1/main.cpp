@@ -285,8 +285,8 @@ const char *texturedQuadPS = "\
 			if (val == 0 && val0 ==1)\
 				s += 1;\
 			if (n < 7)\n\
-				if (n<2 /*|| n == 7*/ || s < 2)\n\
-					color = vec4(1.0,1.0,0,0);\
+				if (n<2 || s < 2)\n\
+					color = vec4(0.0,1.0,0,0);\
 		}\
 		gl_FragColor = color;\
 	}";
