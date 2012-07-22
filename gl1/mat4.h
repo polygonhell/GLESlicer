@@ -18,6 +18,7 @@ struct Mat4
 
 	static void Rotate(Mat4 &m, float a, float x,float y, float z);
 	static void Scale(Mat4 &mat, float s);
+	static void Scale(Mat4 &mat, float x, float y, float z);
 	static void Multiply(Mat4 &mOut, const Mat4 &mA, const Mat4 &mB);
 
 

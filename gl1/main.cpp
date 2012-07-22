@@ -141,7 +141,7 @@ GLint CompileShader(GLuint type, const char *source)
 }
 
 
-int offScreenBufferSize = 64;
+int offScreenBufferSize = 256;
 
 
 uint32_t CreateOffScreenSurface(uint32_t *colorTex)
@@ -250,7 +250,7 @@ const char *texturedQuadVS = "\
 	}";
 
 const char *texturedQuadPS = "\
-	#define onePixel 1.0/64.0\n\
+	#define onePixel 1.0/256.0\n\
 	uniform sampler2D color_texture;\
 	varying highp vec2 tc0;\
 	void main()\
@@ -259,6 +259,7 @@ const char *texturedQuadPS = "\
 		bool col0 = texture2D(color_texture, tc0).b > 0.5;\
 		if (col0)\
 		{\
+			color = vec4(1,0,0,0);\
 			highp vec2 offsets[8];\
 			offsets[0] = vec2(-onePixel, -onePixel);\
 			offsets[1] = vec2(0, -onePixel);\
@@ -270,19 +271,22 @@ const char *texturedQuadPS = "\
 			offsets[7] = vec2(-onePixel, 0);\
 			int s=0;\
 			int n=0;\
-			int val;\
 			int val0 = int(texture2D(color_texture, tc0 + offsets[0]).b);\
 			n += val0;\
+			int val = val0;\
 			for(int i = 1; i < 8; i++)\
 			{\
 				int prev = val;\
 				val = int(texture2D(color_texture, tc0 + offsets[i]).b);\
 				n += val;\
-				if (prev != val)\
+				if (prev == 0 && val == 1)\
 					s += 1;\
 			}\
-			if ( n <= 7)\
-				color = vec4(1.0,1.0,0,0);\
+			if (val == 0 && val0 ==1)\
+				s += 1;\
+			if (n < 7)\n\
+				if (n<2 /*|| n == 7*/ || s < 2)\n\
+					color = vec4(1.0,1.0,0,0);\
 		}\
 		gl_FragColor = color;\
 	}";
@@ -460,7 +464,7 @@ int main(int argc, char *argv[])
 			glDisable(GL_DEPTH_TEST);
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-			Mat4::Scale(m1, 0.01f);
+			Mat4::Scale(m1, 0.02f, 0.02f, 0.01f);
 
 			//glColorMask(0,0,0,0);
 			glUniformMatrix4fv(pmvMatrixLoc, 1, GL_FALSE, m1.m);
@@ -469,6 +473,7 @@ int main(int argc, char *argv[])
 			zSlice += zVel;
 			if (zSlice > 1 || zSlice < 0)
 				zVel *= -1;
+			zSlice = max(zSlice,0);
 
 			printf("Z = %f\n", zSlice);
 
@@ -516,7 +521,7 @@ int main(int argc, char *argv[])
 #endif
 			// Copy the offscreen buffer to the output buffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			glViewport(0,0,800,480);
+			glViewport(160,0,480,480);
 
 			// err = eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
 			// printf("Err1 = %d\n", err);

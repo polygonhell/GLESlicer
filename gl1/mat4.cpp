@@ -45,6 +45,15 @@ void Mat4::Scale(Mat4 &mat, float s)
 	mat.m[15] = 1;
 }
 
+void Mat4::Scale(Mat4 &mat, float x, float y, float z)
+{
+	memset(mat.m, 0, sizeof(float)*16);
+	mat.m[0] = x;
+	mat.m[5] = y;
+	mat.m[10] = z;
+	mat.m[15] = 1;
+}
+
 void Mat4::Identity(Mat4 &mat)
 {
 	memset(mat.m, 0, sizeof(float)*16);
