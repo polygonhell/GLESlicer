@@ -33,6 +33,7 @@
 
 // Index to bind the attributes to vertex shaders
 #define VERTEX_ARRAY	0
+#define TEX_ARRAY		1
 
 
 EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -140,8 +141,12 @@ GLint CompileShader(GLuint type, const char *source)
 }
 
 
+int offScreenBufferSize = 64;
+
+
 uint32_t CreateOffScreenSurface(uint32_t *colorTex)
 {
+
 	uint32_t depthBuffer;
 	uint32_t colorTexture;
 	uint32_t fbo;
@@ -153,16 +158,16 @@ uint32_t CreateOffScreenSurface(uint32_t *colorTex)
 	glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
 	err = glGetError(); printf("err = %d\n", err);
 #ifdef _WIN32
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, offScreenBufferSize, offScreenBufferSize);
 	err = glGetError(); printf("errrrrr = %d\n", err);
 
 	uint32_t stencilBuffer;
 	glGenRenderbuffers(1, &stencilBuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, stencilBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX, 1024, 1024);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX, offScreenBufferSize, offScreenBufferSize);
 
 #else
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, offScreenBufferSize, offScreenBufferSize);
 #endif
 	err = glGetError(); printf("errrrrr = %d\n", err);
 	
@@ -170,11 +175,11 @@ uint32_t CreateOffScreenSurface(uint32_t *colorTex)
 	glGenTextures(1, &colorTexture);
 	glBindTexture(GL_TEXTURE_2D, colorTexture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, offScreenBufferSize, offScreenBufferSize, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
 	err = glGetError(); printf("errrrrr = %d\n", err);
 
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
@@ -234,23 +239,52 @@ const char* vertShaderCode = "\
 
 GLint fragShader, vertShader, program;
 
-
-
 const char *texturedQuadVS = "\
+	attribute highp vec4 myTex;\
 	attribute highp vec4 myPos;\
 	varying highp vec2 tc0;\
 	void main(void)\
 	{\
 		gl_Position = myPos;\
-		tc0 = myPos.xy;\
+		tc0 = myTex.xy;\
 	}";
 
 const char *texturedQuadPS = "\
+	#define onePixel 1.0/64.0\n\
 	uniform sampler2D color_texture;\
 	varying highp vec2 tc0;\
 	void main()\
 	{\
-		gl_FragColor = texture2D(color_texture, tc0);\
+		lowp vec4 color = vec4(0,0,0,0);\
+		bool col0 = texture2D(color_texture, tc0).b > 0.5;\
+		if (col0)\
+		{\
+			highp vec2 offsets[8];\
+			offsets[0] = vec2(-onePixel, -onePixel);\
+			offsets[1] = vec2(0, -onePixel);\
+			offsets[2] = vec2(onePixel, -onePixel);\
+			offsets[3] = vec2(onePixel, 0);\
+			offsets[4] = vec2(onePixel, onePixel);\
+			offsets[5] = vec2(0, onePixel);\
+			offsets[6] = vec2(-onePixel, onePixel);\
+			offsets[7] = vec2(-onePixel, 0);\
+			int s=0;\
+			int n=0;\
+			int val;\
+			int val0 = int(texture2D(color_texture, tc0 + offsets[0]).b);\
+			n += val0;\
+			for(int i = 1; i < 8; i++)\
+			{\
+				int prev = val;\
+				val = int(texture2D(color_texture, tc0 + offsets[i]).b);\
+				n += val;\
+				if (prev != val)\
+					s += 1;\
+			}\
+			if ( n <= 7)\
+				color = vec4(1.0,1.0,0,0);\
+		}\
+		gl_FragColor = color;\
 	}";
 
 GLint quadPShader, quadVShader, QuadProgram;
@@ -266,10 +300,10 @@ float identityMat[] =
 };
 
 GLfloat verts[] = {	
-					-0.9f,0.9f,0.0f, 
-					-0.9f,-0.9f,0.0f, 
-					 0.9f,0.9f,0.0f, 
-					 0.9f,-0.9f,0.0f
+					-1.0f,1.0f,0.0f,  0,1,
+					-1.0f,-1.0f,0.0f, 0,0,
+					 1.0f,1.0f,0.0f,  1,1,
+					 1.0f,-1.0f,0.0f, 1,0,
 					};
 
 uint32_t FSQuad;
@@ -362,6 +396,7 @@ int main(int argc, char *argv[])
 	glAttachShader(QuadProgram, quadPShader);
 	glAttachShader(QuadProgram, quadVShader);
 	glBindAttribLocation(QuadProgram, VERTEX_ARRAY, "myPos");
+	glBindAttribLocation(QuadProgram, TEX_ARRAY, "myTex");
 	glLinkProgram(QuadProgram);
     glGetProgramiv(QuadProgram, GL_LINK_STATUS, &bLinked);
 	if (!bLinked)
@@ -391,7 +426,7 @@ int main(int argc, char *argv[])
 	
 	{
 		float zSlice = 0.3f;
-		float zVel = 0.01f;
+		float zVel = 0.03f;
 		Mat4 m, m1, m2;
 		
 		int pmvMatrixLoc = glGetUniformLocation(program, "myPMVMatrix");
@@ -418,11 +453,12 @@ int main(int argc, char *argv[])
 			// int err = eglMakeCurrent(eglDisplay, pbuffer, pbuffer, eglContext2);
 			// printf("Err1 = %d\n", err);
 			glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
+			glViewport(0,0,offScreenBufferSize,offScreenBufferSize);
 
 			glClearColor(1,1,0,1);
 			glClearStencil(0);
 			glDisable(GL_DEPTH_TEST);
-			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 			Mat4::Scale(m1, 0.01f);
 
@@ -471,13 +507,17 @@ int main(int argc, char *argv[])
 
 			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
-			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
+//			glEnableVertexAttribArray(TEX_ARRAY);
+			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
+//			glVertexAttribPointer(TEX_ARRAY, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void *)(3*sizeof(GLfloat)));
 
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 #endif
 			// Copy the offscreen buffer to the output buffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			glViewport(0,0,800,480);
+
 			// err = eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
 			// printf("Err1 = %d\n", err);
 
@@ -502,9 +542,12 @@ int main(int argc, char *argv[])
 
 			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
-			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 0, 0);
+			glEnableVertexAttribArray(TEX_ARRAY);
+			glVertexAttribPointer(VERTEX_ARRAY, 3, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), 0);
+			glVertexAttribPointer(TEX_ARRAY, 2, GL_FLOAT, GL_FALSE, 5*sizeof(GLfloat), (void *)(3*sizeof(GLfloat)));
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			glDisableVertexAttribArray(TEX_ARRAY);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
 			// err = eglReleaseTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
