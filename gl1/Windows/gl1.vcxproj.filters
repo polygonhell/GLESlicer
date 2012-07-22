@@ -46,7 +46,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Library Include="ESEmulator\lib\libEGL.lib" />
-    <Library Include="ESEmulator\lib\libGLESv2.lib" />
+    <Library Include="PowerVr\Lib\libEGL.lib" />
+    <Library Include="PowerVr\Lib\libGLESv2.lib" />
   </ItemGroup>
 </Project>

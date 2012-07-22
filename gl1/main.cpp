@@ -35,26 +35,18 @@
 #define VERTEX_ARRAY	0
 
 
-EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_PBUFFER_BIT,
+EGLint configAttr[] = { EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
 						EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-						EGL_RED_SIZE, 5,
-						EGL_GREEN_SIZE, 5,
-						EGL_BLUE_SIZE, 5,
+						//EGL_RED_SIZE, 5,
+						//EGL_GREEN_SIZE, 5,
+						//EGL_BLUE_SIZE, 5,
 						//EGL_ALPHA_SIZE, 1,
 						EGL_STENCIL_SIZE, 8,
 
-						EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
+						//EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
 						EGL_NONE
 						};
-EGLint pbufferAttr[] = { 
-						EGL_WIDTH, 2048,
-						EGL_HEIGHT, 2048,
-						EGL_TEXTURE_FORMAT, EGL_TEXTURE_RGB,
-						EGL_TEXTURE_TARGET, EGL_TEXTURE_2D,
-//						EGL_BIND_TO_TEXTURE_RGB, EGL_TRUE,
-//						EGL_SURFACE_TYPE, EGL_PBUFFER_BIT | EGL_WINDOW_BIT,
-						EGL_NONE
-						};
+
 EGLint contextAttribs[] = { EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE };
 
 EGLDisplay eglDisplay = 0;
@@ -115,13 +107,6 @@ bool CreateContext()
 		return false;
 	}
 
-	eglContext2 = eglCreateContext(eglDisplay, eglConfig, NULL, contextAttribs);
-	if (eglGetError() != EGL_SUCCESS)
-	{
-		printf("Create Context failed\n");
-		return false;
-	}
-
 	eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext);
 	return true;
 }
@@ -154,6 +139,76 @@ GLint CompileShader(GLuint type, const char *source)
 	return shader;
 }
 
+
+uint32_t CreateOffScreenSurface(uint32_t *colorTex)
+{
+	uint32_t depthBuffer;
+	uint32_t colorTexture;
+	uint32_t fbo;
+
+	int err;
+	// See if we can create a fbo with a stencil buffer
+	// Generate and bind a render buffer which will become a depth buffer shared between our two FBOs
+	glGenRenderbuffers(1, &depthBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthBuffer);
+	err = glGetError(); printf("err = %d\n", err);
+#ifdef _WIN32
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
+	err = glGetError(); printf("errrrrr = %d\n", err);
+
+	uint32_t stencilBuffer;
+	glGenRenderbuffers(1, &stencilBuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, stencilBuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_STENCIL_INDEX, 1024, 1024);
+
+#else
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
+#endif
+	err = glGetError(); printf("errrrrr = %d\n", err);
+	
+	// Create a texture for rendering to
+	glGenTextures(1, &colorTexture);
+	glBindTexture(GL_TEXTURE_2D, colorTexture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
+	err = glGetError(); printf("errrrrr = %d\n", err);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Create the object that will allow us to render to the aforementioned texture
+	glGenFramebuffers(1, &fbo);
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
+	// Attach the texture to the FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTexture, 0);
+	err = glGetError(); printf("errrrrr = %d\n", err);
+
+	// Attach the depth buffer we created earlier to our FBO.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+#ifdef _WIN32
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, stencilBuffer);
+#else
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthBuffer);
+#endif
+	err = glGetError(); printf("errrrrr = %d\n", err);
+
+	GLuint uStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+
+	if(uStatus != GL_FRAMEBUFFER_COMPLETE)
+	{
+		printf("ERROR: Failed to initialise FBO - %08x\n", uStatus);
+		return false;
+	}
+	printf("got somewhere?");
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if (colorTex)
+		*colorTex = colorTexture;
+	return fbo;
+}
 
 
 const char* fragShaderCode = "\
@@ -224,9 +279,8 @@ int main(int argc, char *argv[])
 {
 	printf("Trivial EGL test\n");
 
-	uint32_t m_uDepthBuffer, m_uiTextureToRenderTo, m_uFBO;
+	uint32_t m_uiTextureToRenderTo, m_uFBO;
 
-	EGLSurface pbuffer;
 	Model model;
 	bool val = stl::convert("grotux.stl", &model);
 	if (!val)
@@ -329,68 +383,7 @@ int main(int argc, char *argv[])
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 
-{
-	// See if we can create a fbo with a stencil buffer
-	// Generate and bind a render buffer which will become a depth buffer shared between our two FBOs
-	glGenRenderbuffers(1, &m_uDepthBuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, m_uDepthBuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8_OES, 1024, 1024);
-	err = glGetError(); printf("errrrrr = %d\n", err);
-	
-	// Create a texture for rendering to
-	glGenTextures(1, &m_uiTextureToRenderTo);
-	glBindTexture(GL_TEXTURE_2D, m_uiTextureToRenderTo);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, 0);
-
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-	// Create the object that will allow us to render to the aforementioned texture
-	glGenFramebuffers(1, &m_uFBO);
-	glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
-
-	// Attach the texture to the FBO
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_uiTextureToRenderTo, 0);
-
-	// Attach the depth buffer we created earlier to our FBO.
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_uDepthBuffer);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, m_uDepthBuffer);
-	err = glGetError(); printf("errrrrr = %d\n", err);
-
-	GLuint uStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-
-	if(uStatus != GL_FRAMEBUFFER_COMPLETE)
-	{
-		printf("ERROR: Failed to initialise FBO - %08x\n", uStatus);
-		return false;
-	}
-	printf("got somewhere?");
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-
-
-
-	// Create a PBuffer
-	pbuffer = eglCreatePbufferSurface(eglDisplay, eglConfig, pbufferAttr);
-	if (pbuffer == EGL_NO_SURFACE)
-	{
-		printf("Failed to Create PBuffer\n");
-		goto cleanup;
-	}
-
-	uint32_t pb_texture;
-	glGenTextures(1, &pb_texture);
-	printf("Texture created %d\n", pb_texture);
-	glBindTexture(GL_TEXTURE_2D, pb_texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	m_uFBO = CreateOffScreenSurface(&m_uiTextureToRenderTo);
 
 
 	// Create a vertex buffer

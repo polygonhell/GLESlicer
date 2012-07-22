@@ -51,7 +51,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>.\ESEmulator\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\PowerVr\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -96,8 +96,8 @@
     <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>
-    <Library Include="ESEmulator\lib\libEGL.lib" />
-    <Library Include="ESEmulator\lib\libGLESv2.lib" />
+    <Library Include="PowerVr\Lib\libEGL.lib" />
+    <Library Include="PowerVr\Lib\libGLESv2.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
