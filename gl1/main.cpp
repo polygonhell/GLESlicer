@@ -141,7 +141,7 @@ GLint CompileShader(GLuint type, const char *source)
 }
 
 
-int offScreenBufferSize = 256;
+int offScreenBufferSize = 64;
 
 
 uint32_t CreateOffScreenSurface(uint32_t *colorTex)
@@ -250,7 +250,7 @@ const char *texturedQuadVS = "\
 	}";
 
 const char *texturedQuadPS = "\
-	#define onePixel 1.0/256.0\n\
+	#define onePixel 1.0/64.0\n\
 	uniform sampler2D color_texture;\
 	varying highp vec2 tc0;\
 	void main()\
