@@ -447,7 +447,7 @@ int main(int argc, char *argv[])
 			err = ts_read(ts, samples, 1);
 			if (err < 0)
 				printf("err = %08x\n", err);
-			printf("X %d -- Y %d -- P %d\n", samples->x, samples->y, samples->pressure);
+			//printf("X %d -- Y %d -- P %d\n", samples->x, samples->y, samples->pressure);
 			if (samples->x > 400 && samples->pressure >200)
 				break;
 #endif
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 				zVel *= -1;
 			zSlice = max(zSlice,0);
 
-			printf("Z = %f\n", zSlice);
+//			printf("Z = %f\n", zSlice);
 
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
