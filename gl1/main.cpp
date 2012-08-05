@@ -141,7 +141,7 @@ GLint CompileShader(GLuint type, const char *source)
 }
 
 
-int offScreenBufferSize = 64;
+const int offScreenBufferSize = 256;
 
 
 uint32_t CreateOffScreenSurface(uint32_t *colorTex)
@@ -250,7 +250,7 @@ const char *texturedQuadVS = "\
 	}";
 
 const char *texturedQuadPS = "\
-	#define onePixel 1.0/64.0\n\
+	#define onePixel 1.0/256.0\n\
 	uniform sampler2D color_texture;\
 	varying highp vec2 tc0;\
 	void main()\
@@ -459,7 +459,7 @@ int main(int argc, char *argv[])
 			glBindFramebuffer(GL_FRAMEBUFFER, m_uFBO);
 			glViewport(0,0,offScreenBufferSize,offScreenBufferSize);
 
-			glClearColor(1,1,0,1);
+			glClearColor(0,0,0,0);
 			glClearStencil(0);
 			glDisable(GL_DEPTH_TEST);
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -475,7 +475,7 @@ int main(int argc, char *argv[])
 				zVel *= -1;
 			zSlice = max(zSlice,0);
 
-//			printf("Z = %f\n", zSlice);
+			printf("Z = %f\n", zSlice);
 
 			glBindBuffer(GL_ARRAY_BUFFER, model.vbo);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
@@ -519,6 +519,21 @@ int main(int argc, char *argv[])
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); 
 #endif
+
+#if 0
+			uint16_t data[offScreenBufferSize*offScreenBufferSize];
+			glReadPixels(0,0, offScreenBufferSize, offScreenBufferSize, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, data);
+#if 0
+			for (int i = 0; i < offScreenBufferSize; i++)
+			{
+				for (int j = 0; j < offScreenBufferSize; j++)
+					printf("%1d", data[i*offScreenBufferSize +j] != 0);
+				printf("\n");
+			}
+#endif
+#endif
+
+
 			// Copy the offscreen buffer to the output buffer
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 			glViewport(160,0,480,480);
@@ -532,7 +547,7 @@ int main(int argc, char *argv[])
 			glClearStencil(0);
 			glClear(GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-
+#if 1
 			glEnable(GL_TEXTURE_2D);
 			glUseProgram(QuadProgram);
 			glActiveTexture(GL_TEXTURE0);
@@ -540,10 +555,6 @@ int main(int argc, char *argv[])
 			glUniform1i(texture_location, 0);
 
 			glBindTexture(GL_TEXTURE_2D, m_uiTextureToRenderTo);
-			// err = eglBindTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
-			// printf("Err2 = %d\n", err);
-			// err = eglGetError();
-			// printf("Extended error %08x\n", err);
 
 			glBindBuffer(GL_ARRAY_BUFFER, FSQuad);
 			glEnableVertexAttribArray(VERTEX_ARRAY);
@@ -555,10 +566,8 @@ int main(int argc, char *argv[])
 			glDisableVertexAttribArray(TEX_ARRAY);
 
 			glBindTexture(GL_TEXTURE_2D, 0);
-			// err = eglReleaseTexImage(eglDisplay, pbuffer, EGL_BACK_BUFFER);
-			// printf("Err2 = %d\n", err);
-			// err = eglGetError();
-			// printf("Extended error %08x\n", err);
+
+#endif
 
 			eglSwapBuffers(eglDisplay, eglSurface);
 
